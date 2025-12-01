@@ -76,33 +76,45 @@ const VideoChat: React.FC = () => {
             if (localVideoRef.current) {
                 localVideoRef.current.srcObject = stream;
             }
-            setStatus('Camera ready. Click Start to find a partner.');
+            setStatus('Camera ready. Searching for partner...');
+            socketRef.current?.emit('find_partner');
         } catch (err) {
             console.error('Error accessing camera:', err);
             setStatus('Error accessing camera. Please allow permissions.');
         }
     };
 
-    const findNewPartner = () => {
+    const findNewPartner = async () => {
         if (partnerConnected) {
             closePeer();
             setPartnerConnected(false);
             setMessages([]);
-            socketRef.current?.emit('disconnect_partner'); // Optional cleanup
+            socketRef.current?.emit('disconnect_partner');
         }
-        setStatus('Searching for partner...');
-        setMessages([]);
-        socketRef.current?.emit('find_partner');
+
+        // Restart camera if it was stopped
+        if (!localStreamRef.current || localStreamRef.current.getTracks().every(t => t.readyState === 'ended')) {
+            await startCamera();
+        } else {
+            setStatus('Searching for partner...');
+            setMessages([]);
+            socketRef.current?.emit('find_partner');
+        }
     };
 
     const stopChat = () => {
         closePeer();
         setPartnerConnected(false);
         setStatus('Chat stopped. Click Start to find a new partner.');
-        // We don't explicitly tell server to remove from queue because find_partner handles queue logic,
-        // but if we were in queue, we might want to leave. 
-        // For MVP, just closing peer and not emitting find_partner is enough.
-        // If we wanted to be strict, we'd emit a 'leave_queue' event.
+
+        // Stop camera and mic
+        if (localStreamRef.current) {
+            localStreamRef.current.getTracks().forEach(track => track.stop());
+            localStreamRef.current = null;
+            if (localVideoRef.current) {
+                localVideoRef.current.srcObject = null;
+            }
+        }
     };
 
     const createPeer = async (initiator: boolean) => {
@@ -185,7 +197,7 @@ const VideoChat: React.FC = () => {
                                 <p className="text-xl mb-4">{status}</p>
                                 <button
                                     onClick={findNewPartner}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-lg shadow-lg transform transition hover:scale-105"
                                 >
                                     Start / Next
                                 </button>
@@ -221,16 +233,16 @@ const VideoChat: React.FC = () => {
                             Send
                         </button>
                     </form>
-                    <div className="p-2 border-t border-gray-200 flex justify-between">
+                    <div className="p-4 border-t border-gray-200 flex justify-between gap-4">
                         <button
                             onClick={stopChat}
-                            className="text-sm text-gray-600 hover:text-gray-800"
+                            className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded shadow transition"
                         >
                             Stop
                         </button>
                         <button
                             onClick={findNewPartner}
-                            className="text-sm font-bold text-blue-600 hover:text-blue-800"
+                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded shadow transition"
                         >
                             Next
                         </button>
