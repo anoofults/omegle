@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import io, { Socket } from 'socket.io-client';
 
-const SERVER_URL = `http://${window.location.hostname}:3000`;
+const SERVER_URL = import.meta.env.PROD ? '/' : `http://${window.location.hostname}:3000`;
 
 const VideoChat: React.FC = () => {
     const [status, setStatus] = useState<string>('Connecting to server...');
