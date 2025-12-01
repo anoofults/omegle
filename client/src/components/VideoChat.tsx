@@ -37,7 +37,7 @@ const VideoChat: React.FC = () => {
                     await peerRef.current.setRemoteDescription(new RTCSessionDescription(signal));
                     const answer = await peerRef.current.createAnswer();
                     await peerRef.current.setLocalDescription(answer);
-                    socket.emit('signal', { target: sender, signal: answer });
+                    socket.emit('signal', { signal: answer });
                 } else if (signal.type === 'answer') {
                     await peerRef.current.setRemoteDescription(new RTCSessionDescription(signal));
                 } else if (signal.candidate) {

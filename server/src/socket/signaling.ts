@@ -62,12 +62,11 @@ export const setupSignaling = (io: Server) => {
             }
         });
 
-        socket.on('signal', (data: { target: string; signal: any }) => {
-            // Relay signal to target
-            // In a real app, verify target is the partner
+        socket.on('signal', (data: { signal: any }) => {
+            // Relay signal to partner
             const user = users.get(socket.id);
-            if (user && user.partnerId === data.target) { // Basic security
-                io.to(data.target).emit('signal', { sender: socket.id, signal: data.signal });
+            if (user && user.partnerId) {
+                io.to(user.partnerId).emit('signal', { sender: socket.id, signal: data.signal });
             }
         });
 
